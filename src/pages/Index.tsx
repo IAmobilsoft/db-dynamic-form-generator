@@ -5,7 +5,13 @@ import Dashboard from '@/components/Dashboard';
 
 const Index = () => {
   const [isConnected, setIsConnected] = useState(false);
-  const [connectionDetails, setConnectionDetails] = useState<ConnectionDetails | null>(null);
+  const [connectionDetails, setConnectionDetails] = useState<ConnectionDetails | null>({
+    server: '145.223.75.189,1433',
+    database: 'Mobilpos',
+    authentication: 'sql',
+    username: 'sa',
+    password: 'D3v3l0p3r2024$'
+  });
   
   const handleConnect = (details: ConnectionDetails) => {
     setConnectionDetails(details);
@@ -27,7 +33,7 @@ const Index = () => {
               Connect to your SQL Server database and generate dynamic forms based on your database structure.
             </p>
           </div>
-          <ConnectionForm onConnect={handleConnect} />
+          <ConnectionForm onConnect={handleConnect} defaultValues={connectionDetails} />
         </div>
       ) : (
         connectionDetails && <Dashboard 

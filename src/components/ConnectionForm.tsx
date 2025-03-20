@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,7 @@ import { toast } from "sonner";
 
 interface ConnectionFormProps {
   onConnect: (connectionDetails: ConnectionDetails) => void;
+  defaultValues?: ConnectionDetails | null;
 }
 
 export interface ConnectionDetails {
@@ -19,7 +20,7 @@ export interface ConnectionDetails {
   password?: string;
 }
 
-const ConnectionForm: React.FC<ConnectionFormProps> = ({ onConnect }) => {
+const ConnectionForm: React.FC<ConnectionFormProps> = ({ onConnect, defaultValues }) => {
   const [isConnecting, setIsConnecting] = useState(false);
   const [connectionDetails, setConnectionDetails] = useState<ConnectionDetails>({
     server: '',
@@ -28,6 +29,12 @@ const ConnectionForm: React.FC<ConnectionFormProps> = ({ onConnect }) => {
     username: '',
     password: '',
   });
+
+  useEffect(() => {
+    if (defaultValues) {
+      setConnectionDetails(defaultValues);
+    }
+  }, [defaultValues]);
 
   const handleChange = (field: keyof ConnectionDetails, value: string) => {
     setConnectionDetails(prev => ({ ...prev, [field]: value }));
