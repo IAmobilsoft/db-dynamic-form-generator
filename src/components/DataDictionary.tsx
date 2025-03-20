@@ -65,7 +65,7 @@ const DataDictionary: React.FC<DataDictionaryProps> = ({
         // Simulamos la conexión a la base de datos
         const tablesData = await getTables({
           server: '145.223.75.189,1433',
-          database: 'Mobilpos',
+          database: 'db_viva_1a',
           authentication: 'sql',
           username: 'sa',
           password: 'D3v3l0p3r2024$'
