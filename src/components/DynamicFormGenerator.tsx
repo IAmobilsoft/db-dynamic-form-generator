@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   Dialog,
@@ -68,14 +67,12 @@ const DynamicFormGenerator: React.FC<DynamicFormGeneratorProps> = ({
   const [selectedField, setSelectedField] = useState<FormField | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   
-  // Initialize form data from table columns
   useEffect(() => {
     if (tableColumns.length > 0 && isOpen) {
       const initialFormName = `${tableName} Form`;
       setFormName(initialFormName);
       
       const formattedFields = tableColumns.map((column, index) => {
-        // Determine the field type based on the column data type
         let fieldType = 'text';
         if (column.dataType.includes('bit')) {
           fieldType = 'switch';
@@ -87,7 +84,6 @@ const DynamicFormGenerator: React.FC<DynamicFormGeneratorProps> = ({
           fieldType = 'textarea';
         }
 
-        // For foreign keys, use select type
         if (column.isForeignKey) {
           fieldType = 'select';
         }
@@ -104,7 +100,7 @@ const DynamicFormGenerator: React.FC<DynamicFormGeneratorProps> = ({
           isPrimaryKey: column.isPrimaryKey,
           isForeignKey: column.isForeignKey,
           referencedTable: column.referencedTable,
-          foreignKeyFields: column.isForeignKey ? ['id', 'name'] : undefined, // Default to id and name
+          foreignKeyFields: column.isForeignKey ? ['id', 'name'] : undefined,
           order: index,
           options: column.isForeignKey ? [
             { label: 'Loading...', value: 'loading' }
@@ -115,6 +111,12 @@ const DynamicFormGenerator: React.FC<DynamicFormGeneratorProps> = ({
       setFields(formattedFields);
     }
   }, [tableName, tableColumns, isOpen]);
+  
+  useEffect(() => {
+    if (isOpen) {
+      setActiveTab("editor");
+    }
+  }, [isOpen]);
   
   const handleFieldSelect = (field: FormField) => {
     setSelectedField(field);
@@ -142,7 +144,6 @@ const DynamicFormGenerator: React.FC<DynamicFormGeneratorProps> = ({
     const [reorderedItem] = items.splice(result.source.index, 1);
     items.splice(result.destination.index, 0, reorderedItem);
     
-    // Update the order property of each field
     const updatedFields = items.map((field, index) => ({
       ...field,
       order: index
@@ -419,7 +420,7 @@ const DynamicFormGenerator: React.FC<DynamicFormGeneratorProps> = ({
             <TabsContent value="preview" className="flex-1 overflow-hidden mt-0 pt-0">
               <ScrollArea className="h-full px-6 py-4">
                 <DynamicFormPreview 
-                  formName={formName} 
+                  formName={formName || `${tableName} Form`}
                   formDescription={formDescription}
                   fields={fields}
                 />

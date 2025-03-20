@@ -44,6 +44,22 @@ const DynamicFormPreview: React.FC<DynamicFormPreviewProps> = ({
     field.label.toLowerCase().includes('tipo de documento')
   );
   
+  if (fields.length === 0) {
+    return (
+      <Card className="w-full max-w-2xl mx-auto mb-6">
+        <CardHeader className="pb-4">
+          <CardTitle>{formName || 'Untitled Form'}</CardTitle>
+          {formDescription && <CardDescription>{formDescription}</CardDescription>}
+        </CardHeader>
+        <CardContent>
+          <div className="text-center p-10 text-muted-foreground border rounded-md">
+            No fields configured yet. Add fields to preview the form.
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+  
   return (
     <Card className="w-full max-w-2xl mx-auto mb-6">
       <CardHeader className="pb-4">
@@ -52,12 +68,8 @@ const DynamicFormPreview: React.FC<DynamicFormPreviewProps> = ({
       </CardHeader>
       
       <CardContent className="space-y-6 pb-6">
-        {sortedFields.length === 0 ? (
-          <div className="text-center p-10 text-muted-foreground border rounded-md">
-            No fields configured yet
-          </div>
-        ) : (
-          <>
+        <ScrollArea className="pr-4" style={{ maxHeight: 'calc(100vh - 300px)' }}>
+          <div className="space-y-6 pr-4">
             {sortedFields.map((field) => (
               <div key={field.id} className="space-y-2">
                 <Label htmlFor={field.id} className="flex items-center gap-1">
@@ -144,8 +156,8 @@ const DynamicFormPreview: React.FC<DynamicFormPreviewProps> = ({
                 </div>
               </>
             )}
-          </>
-        )}
+          </div>
+        </ScrollArea>
       </CardContent>
       
       <CardFooter className="flex justify-end gap-2 border-t pt-4">

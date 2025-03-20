@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { ConnectionDetails } from './ConnectionForm';
 import Sidebar from './Sidebar';
@@ -24,7 +23,6 @@ const Dashboard: React.FC<DashboardProps> = ({ connectionDetails, onDisconnect }
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   
-  // Fetch tables when component mounts
   useEffect(() => {
     const fetchTables = async () => {
       try {
@@ -109,7 +107,9 @@ const Dashboard: React.FC<DashboardProps> = ({ connectionDetails, onDisconnect }
       }
     }
     
-    setFormGeneratorOpen(true);
+    setTimeout(() => {
+      setFormGeneratorOpen(true);
+    }, 100);
   };
   
   const handleAddGuide = (tableName: string, guidePath: string, description: string) => {
@@ -127,7 +127,6 @@ const Dashboard: React.FC<DashboardProps> = ({ connectionDetails, onDisconnect }
     });
   };
   
-  // Convert the saved forms to the format expected by Sidebar
   const dynamicFormsForSidebar = savedForms.map(form => ({
     id: form.id,
     title: form.name,
@@ -154,7 +153,6 @@ const Dashboard: React.FC<DashboardProps> = ({ connectionDetails, onDisconnect }
           />
         </ScrollArea>
         
-        {/* Modals/Dialogs */}
         <TableStructure 
           isOpen={tableStructureOpen}
           onClose={() => setTableStructureOpen(false)}
