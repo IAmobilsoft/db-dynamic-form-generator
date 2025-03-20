@@ -7,7 +7,7 @@ const Index = () => {
   const [isConnected, setIsConnected] = useState(false);
   const [connectionDetails, setConnectionDetails] = useState<ConnectionDetails | null>({
     server: '145.223.75.189,1433',
-    database: 'Mobilpos',
+    database: 'db_Viva_1a',
     authentication: 'sql',
     username: 'sa',
     password: 'D3v3l0p3r2024$'
