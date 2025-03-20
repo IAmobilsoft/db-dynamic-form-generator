@@ -8,8 +8,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { FormField } from './DynamicFormGenerator';
-import { calculateDianVerificationDigit } from '@/utils/databaseUtils';
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 
 interface DynamicFormPreviewProps {
   formName: string;
@@ -44,105 +45,115 @@ const DynamicFormPreview: React.FC<DynamicFormPreviewProps> = ({
   );
   
   return (
-    <Card className="w-full max-w-2xl mx-auto">
-      <CardHeader>
+    <Card className="w-full max-w-2xl mx-auto mb-6">
+      <CardHeader className="pb-4">
         <CardTitle>{formName || 'Untitled Form'}</CardTitle>
         {formDescription && <CardDescription>{formDescription}</CardDescription>}
       </CardHeader>
-      <CardContent className="space-y-6">
-        {sortedFields.map((field) => (
-          <div key={field.id} className="space-y-2">
-            <Label htmlFor={field.id} className="flex items-center gap-1">
-              {field.label}
-              {field.required && <span className="text-destructive">*</span>}
-              {field.isForeignKey && (
-                <Badge variant="outline" className="ml-2 text-xs">FK</Badge>
-              )}
-            </Label>
-            
-            {field.type === 'text' && (
-              <Input id={field.id} placeholder={`Enter ${field.label.toLowerCase()}`} />
-            )}
-            
-            {field.type === 'textarea' && (
-              <Textarea id={field.id} placeholder={`Enter ${field.label.toLowerCase()}`} />
-            )}
-            
-            {field.type === 'number' && (
-              <Input id={field.id} type="number" placeholder={`Enter ${field.label.toLowerCase()}`} />
-            )}
-            
-            {field.type === 'date' && (
-              <Input id={field.id} type="date" />
-            )}
-            
-            {field.type === 'select' && (
-              <Select>
-                <SelectTrigger id={field.id}>
-                  <SelectValue placeholder={`Select ${field.label.toLowerCase()}`} />
-                </SelectTrigger>
-                <SelectContent>
-                  {field.options?.map((option, index) => (
-                    <SelectItem key={index} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  )) || (
-                    <>
-                      <SelectItem value="placeholder">Sample Option 1</SelectItem>
-                      <SelectItem value="placeholder2">Sample Option 2</SelectItem>
-                      <SelectItem value="placeholder3">Sample Option 3</SelectItem>
-                    </>
-                  )}
-                </SelectContent>
-              </Select>
-            )}
-            
-            {field.type === 'switch' && (
-              <div className="flex items-center space-x-2">
-                <Switch id={field.id} />
-                <Label htmlFor={field.id} className="cursor-pointer">
-                  Enabled
-                </Label>
-              </div>
-            )}
-            
-            {field.isForeignKey && (
-              <div className="text-xs text-muted-foreground mt-1">
-                References {field.referencedTable} ({field.foreignKeyFields?.join(', ')})
-              </div>
-            )}
-          </div>
-        ))}
-        
-        {/* NIT Verification Digit Field (only show if hasNITField is true, documentTypeField exists, and hasVerificationDigit is false) */}
-        {hasNITField && documentTypeField && !hasVerificationDigit && (
-          <div className="space-y-2 border-t pt-4 mt-4">
-            <Label htmlFor="dv" className="flex items-center gap-1">
-              Dígito de Verificación (DV)
-              <Badge variant="outline" className="ml-2 text-xs">Auto</Badge>
-            </Label>
-            <div className="flex gap-2 items-center">
-              <Input id="dv" className="w-20 text-center" readOnly value="0" />
-              <p className="text-xs text-muted-foreground">
-                El dígito de verificación se calculará automáticamente cuando el tipo de documento sea NIT (31)
-              </p>
-            </div>
-          </div>
-        )}
-        
-        {sortedFields.length === 0 && (
-          <div className="text-center p-10 text-muted-foreground">
+      
+      <CardContent className="space-y-6 pb-6">
+        {sortedFields.length === 0 ? (
+          <div className="text-center p-10 text-muted-foreground border rounded-md">
             No fields configured yet
           </div>
+        ) : (
+          <>
+            {sortedFields.map((field) => (
+              <div key={field.id} className="space-y-2">
+                <Label htmlFor={field.id} className="flex items-center gap-1">
+                  {field.label}
+                  {field.required && <span className="text-destructive">*</span>}
+                  {field.isPrimaryKey && (
+                    <Badge variant="outline" className="ml-2 text-xs bg-amber-50 text-amber-800 border-amber-200">PK</Badge>
+                  )}
+                  {field.isForeignKey && (
+                    <Badge variant="outline" className="ml-2 text-xs bg-blue-50 text-blue-800 border-blue-200">FK</Badge>
+                  )}
+                </Label>
+                
+                {field.type === 'text' && (
+                  <Input id={field.id} placeholder={`Enter ${field.label.toLowerCase()}`} />
+                )}
+                
+                {field.type === 'textarea' && (
+                  <Textarea id={field.id} placeholder={`Enter ${field.label.toLowerCase()}`} rows={3} />
+                )}
+                
+                {field.type === 'number' && (
+                  <Input id={field.id} type="number" placeholder={`Enter ${field.label.toLowerCase()}`} />
+                )}
+                
+                {field.type === 'date' && (
+                  <Input id={field.id} type="date" />
+                )}
+                
+                {field.type === 'select' && (
+                  <Select>
+                    <SelectTrigger id={field.id}>
+                      <SelectValue placeholder={`Select ${field.label.toLowerCase()}`} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {field.options?.length ? field.options.map((option, index) => (
+                        <SelectItem key={index} value={option.value || `option-${index}`}>
+                          {option.label}
+                        </SelectItem>
+                      )) : (
+                        <>
+                          <SelectItem value="option-1">Sample Option 1</SelectItem>
+                          <SelectItem value="option-2">Sample Option 2</SelectItem>
+                          <SelectItem value="option-3">Sample Option 3</SelectItem>
+                        </>
+                      )}
+                    </SelectContent>
+                  </Select>
+                )}
+                
+                {field.type === 'switch' && (
+                  <div className="flex items-center space-x-2">
+                    <Switch id={field.id} />
+                    <Label htmlFor={field.id} className="cursor-pointer">
+                      Enabled
+                    </Label>
+                  </div>
+                )}
+                
+                {field.isForeignKey && (
+                  <div className="text-xs text-muted-foreground mt-1">
+                    References {field.referencedTable} ({field.foreignKeyFields?.join(', ') || 'id'})
+                  </div>
+                )}
+              </div>
+            ))}
+            
+            {/* NIT Verification Digit Field (only show if hasNITField is true, documentTypeField exists, and hasVerificationDigit is false) */}
+            {hasNITField && documentTypeField && !hasVerificationDigit && (
+              <>
+                <Separator className="my-4" />
+                
+                <div className="space-y-2">
+                  <Label htmlFor="dv" className="flex items-center gap-1">
+                    Dígito de Verificación (DV)
+                    <Badge variant="outline" className="ml-2 text-xs bg-green-50 text-green-800 border-green-200">Auto</Badge>
+                  </Label>
+                  <div className="flex gap-2 items-center">
+                    <Input id="dv" className="w-20 text-center" readOnly value="0" />
+                    <p className="text-xs text-muted-foreground">
+                      El dígito de verificación se calculará automáticamente cuando el tipo de documento sea NIT (31)
+                    </p>
+                  </div>
+                </div>
+              </>
+            )}
+          </>
         )}
       </CardContent>
-      <CardFooter className="flex justify-end gap-2">
+      
+      <CardFooter className="flex justify-end gap-2 border-t pt-4">
         <Button variant="outline">Cancel</Button>
-        <Button>Submit</Button>
+        <Button type="submit">Submit</Button>
       </CardFooter>
     </Card>
   );
 };
 
 export default DynamicFormPreview;
-

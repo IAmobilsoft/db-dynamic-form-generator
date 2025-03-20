@@ -17,7 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { FileText, Eye, Save, MoveHorizontal } from 'lucide-react';
+import { FileText, Eye, Save, MoveHorizontal, AlertCircle } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import DynamicFormPreview from './DynamicFormPreview';
@@ -74,45 +74,43 @@ const DynamicFormGenerator: React.FC<DynamicFormGeneratorProps> = ({
       const initialFormName = `${tableName} Form`;
       setFormName(initialFormName);
       
-      const formattedFields = tableColumns
-        .filter(col => !col.isPrimaryKey) // Exclude primary keys
-        .map((column, index) => {
-          // Determine the field type based on the column data type
-          let fieldType = 'text';
-          if (column.dataType.includes('bit')) {
-            fieldType = 'switch';
-          } else if (column.dataType.includes('int')) {
-            fieldType = 'number';
-          } else if (column.dataType.includes('date')) {
-            fieldType = 'date';
-          } else if (column.dataType.includes('text') || column.dataType.includes('varchar') && parseInt(column.dataType.match(/\d+/)?.[0] || "0") > 255) {
-            fieldType = 'textarea';
-          }
+      const formattedFields = tableColumns.map((column, index) => {
+        // Determine the field type based on the column data type
+        let fieldType = 'text';
+        if (column.dataType.includes('bit')) {
+          fieldType = 'switch';
+        } else if (column.dataType.includes('int')) {
+          fieldType = 'number';
+        } else if (column.dataType.includes('date')) {
+          fieldType = 'date';
+        } else if (column.dataType.includes('text') || (column.dataType.includes('varchar') && parseInt(column.dataType.match(/\d+/)?.[0] || "0") > 255)) {
+          fieldType = 'textarea';
+        }
 
-          // For foreign keys, use select type
-          if (column.isForeignKey) {
-            fieldType = 'select';
-          }
-          
-          return {
-            id: `field-${index}`,
-            name: column.name,
-            label: column.name
-              .replace(/([A-Z])/g, ' $1')
-              .replace(/_/g, ' ')
-              .replace(/^\w/, c => c.toUpperCase()),
-            type: fieldType,
-            required: !column.nullable,
-            isPrimaryKey: column.isPrimaryKey,
-            isForeignKey: column.isForeignKey,
-            referencedTable: column.referencedTable,
-            foreignKeyFields: column.isForeignKey ? ['id', 'name'] : undefined, // Default to id and name
-            order: index,
-            options: column.isForeignKey ? [
-              { label: 'Loading...', value: '' }
-            ] : undefined
-          };
-        });
+        // For foreign keys, use select type
+        if (column.isForeignKey) {
+          fieldType = 'select';
+        }
+        
+        return {
+          id: `field-${index}`,
+          name: column.name,
+          label: column.name
+            .replace(/([A-Z])/g, ' $1')
+            .replace(/_/g, ' ')
+            .replace(/^\w/, c => c.toUpperCase()),
+          type: fieldType,
+          required: !column.nullable,
+          isPrimaryKey: column.isPrimaryKey,
+          isForeignKey: column.isForeignKey,
+          referencedTable: column.referencedTable,
+          foreignKeyFields: column.isForeignKey ? ['id', 'name'] : undefined, // Default to id and name
+          order: index,
+          options: column.isForeignKey ? [
+            { label: 'Loading...', value: 'loading' }
+          ] : undefined
+        };
+      });
       
       setFields(formattedFields);
     }
@@ -185,10 +183,10 @@ const DynamicFormGenerator: React.FC<DynamicFormGeneratorProps> = ({
         <DialogHeader className="p-6 pb-0">
           <DialogTitle className="flex items-center gap-2 text-2xl">
             <FileText className="h-6 w-6 text-primary" />
-            Generate Dynamic Form
+            Generate Dynamic Form for {tableName}
           </DialogTitle>
           <DialogDescription>
-            {tableName ? `Customizing form for table: ${tableName}` : 'Configure your dynamic form'}
+            {tableName ? `Customizing form based on table structure` : 'Configure your dynamic form'}
           </DialogDescription>
         </DialogHeader>
         
@@ -233,11 +231,16 @@ const DynamicFormGenerator: React.FC<DynamicFormGeneratorProps> = ({
                   </div>
                   
                   <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-sm font-medium">Form Fields</h3>
-                    <p className="text-xs text-muted-foreground">{fields.length} fields</p>
+                    <h3 className="text-sm font-medium">Form Fields ({fields.length})</h3>
+                    {fields.some(f => f.isPrimaryKey) && (
+                      <div className="flex items-center text-xs text-amber-500 gap-1">
+                        <AlertCircle className="h-3 w-3" />
+                        <span>Primary keys included</span>
+                      </div>
+                    )}
                   </div>
                   
-                  <ScrollArea className="flex-1">
+                  <ScrollArea className="flex-1 pr-4">
                     <DragDropContext onDragEnd={handleDragEnd}>
                       <Droppable droppableId="fields">
                         {(provided) => (
@@ -252,13 +255,26 @@ const DynamicFormGenerator: React.FC<DynamicFormGeneratorProps> = ({
                                   <div
                                     ref={provided.innerRef}
                                     {...provided.draggableProps}
-                                    className={`border rounded-md p-3 bg-background hover:bg-muted/50 transition-colors cursor-pointer ${selectedField?.id === field.id ? 'ring-1 ring-primary border-primary' : ''}`}
+                                    className={`border rounded-md p-3 bg-background hover:bg-muted/50 transition-colors cursor-pointer ${
+                                      selectedField?.id === field.id ? 'ring-1 ring-primary border-primary' : ''
+                                    } ${field.isPrimaryKey ? 'border-amber-200 bg-amber-50' : ''}`}
                                     onClick={() => handleFieldSelect(field)}
                                   >
                                     <div className="flex items-center justify-between">
                                       <div className="flex flex-col">
                                         <span className="font-medium text-sm">{field.label}</span>
-                                        <span className="text-xs text-muted-foreground">{field.type}</span>
+                                        <div className="flex items-center gap-1">
+                                          <span className="text-xs text-muted-foreground">{field.type}</span>
+                                          {field.isPrimaryKey && (
+                                            <span className="text-xs bg-amber-100 text-amber-800 px-1 rounded">PK</span>
+                                          )}
+                                          {field.isForeignKey && (
+                                            <span className="text-xs bg-blue-100 text-blue-800 px-1 rounded">FK</span>
+                                          )}
+                                          {field.required && (
+                                            <span className="text-xs text-destructive">*</span>
+                                          )}
+                                        </div>
                                       </div>
                                       <div
                                         {...provided.dragHandleProps}
@@ -401,14 +417,12 @@ const DynamicFormGenerator: React.FC<DynamicFormGeneratorProps> = ({
             </TabsContent>
             
             <TabsContent value="preview" className="flex-1 overflow-hidden mt-0 pt-0">
-              <ScrollArea className="h-full">
-                <div className="p-6">
-                  <DynamicFormPreview 
-                    formName={formName} 
-                    formDescription={formDescription}
-                    fields={fields}
-                  />
-                </div>
+              <ScrollArea className="h-full px-6 py-4">
+                <DynamicFormPreview 
+                  formName={formName} 
+                  formDescription={formDescription}
+                  fields={fields}
+                />
               </ScrollArea>
             </TabsContent>
           </Tabs>
@@ -429,4 +443,3 @@ const DynamicFormGenerator: React.FC<DynamicFormGeneratorProps> = ({
 };
 
 export default DynamicFormGenerator;
-

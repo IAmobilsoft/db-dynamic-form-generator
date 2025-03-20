@@ -7,6 +7,7 @@ import TableStructure from './TableStructure';
 import DynamicFormGenerator, { FormConfig } from './DynamicFormGenerator';
 import { useToast } from "@/components/ui/use-toast";
 import { getTables, getTableStructure } from '@/utils/databaseUtils';
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface DashboardProps {
   connectionDetails: ConnectionDetails;
@@ -144,12 +145,14 @@ const Dashboard: React.FC<DashboardProps> = ({ connectionDetails, onDisconnect }
       />
       
       <main className="flex-1 overflow-hidden flex flex-col">
-        <DataDictionary 
-          databaseName={connectionDetails.database}
-          onViewStructure={handleViewStructure}
-          onGenerateForm={handleGenerateForm}
-          onAddGuide={handleAddGuide}
-        />
+        <ScrollArea className="flex-1">
+          <DataDictionary 
+            databaseName={connectionDetails.database}
+            onViewStructure={handleViewStructure}
+            onGenerateForm={handleGenerateForm}
+            onAddGuide={handleAddGuide}
+          />
+        </ScrollArea>
         
         {/* Modals/Dialogs */}
         <TableStructure 
@@ -172,4 +175,3 @@ const Dashboard: React.FC<DashboardProps> = ({ connectionDetails, onDisconnect }
 };
 
 export default Dashboard;
-
