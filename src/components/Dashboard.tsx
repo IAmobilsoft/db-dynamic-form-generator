@@ -1,78 +1,113 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ConnectionDetails } from './ConnectionForm';
 import Sidebar from './Sidebar';
 import DataDictionary from './DataDictionary';
 import TableStructure from './TableStructure';
 import DynamicFormGenerator, { FormConfig } from './DynamicFormGenerator';
 import { useToast } from "@/components/ui/use-toast";
+import { getTables, getTableStructure } from '@/utils/databaseUtils';
 
 interface DashboardProps {
   connectionDetails: ConnectionDetails;
   onDisconnect: () => void;
 }
 
-// Mock data for table structure
-const MOCK_COLUMNS = {
-  'Customers': [
-    { name: 'CustomerID', dataType: 'int', nullable: false, isPrimaryKey: true, isForeignKey: false },
-    { name: 'CompanyName', dataType: 'varchar(100)', nullable: false, isPrimaryKey: false, isForeignKey: false },
-    { name: 'ContactName', dataType: 'varchar(100)', nullable: true, isPrimaryKey: false, isForeignKey: false },
-    { name: 'ContactTitle', dataType: 'varchar(50)', nullable: true, isPrimaryKey: false, isForeignKey: false },
-    { name: 'Address', dataType: 'varchar(255)', nullable: true, isPrimaryKey: false, isForeignKey: false },
-    { name: 'City', dataType: 'varchar(50)', nullable: true, isPrimaryKey: false, isForeignKey: false },
-    { name: 'Region', dataType: 'varchar(50)', nullable: true, isPrimaryKey: false, isForeignKey: false },
-    { name: 'PostalCode', dataType: 'varchar(20)', nullable: true, isPrimaryKey: false, isForeignKey: false },
-    { name: 'Country', dataType: 'varchar(50)', nullable: true, isPrimaryKey: false, isForeignKey: false },
-    { name: 'Phone', dataType: 'varchar(20)', nullable: true, isPrimaryKey: false, isForeignKey: false },
-    { name: 'Fax', dataType: 'varchar(20)', nullable: true, isPrimaryKey: false, isForeignKey: false },
-    { name: 'IsActive', dataType: 'bit', nullable: false, isPrimaryKey: false, isForeignKey: false },
-  ],
-  'Orders': [
-    { name: 'OrderID', dataType: 'int', nullable: false, isPrimaryKey: true, isForeignKey: false },
-    { name: 'CustomerID', dataType: 'int', nullable: false, isPrimaryKey: false, isForeignKey: true, referencedTable: 'Customers' },
-    { name: 'EmployeeID', dataType: 'int', nullable: false, isPrimaryKey: false, isForeignKey: true, referencedTable: 'Employees' },
-    { name: 'OrderDate', dataType: 'datetime', nullable: false, isPrimaryKey: false, isForeignKey: false },
-    { name: 'RequiredDate', dataType: 'datetime', nullable: true, isPrimaryKey: false, isForeignKey: false },
-    { name: 'ShippedDate', dataType: 'datetime', nullable: true, isPrimaryKey: false, isForeignKey: false },
-    { name: 'ShipVia', dataType: 'int', nullable: true, isPrimaryKey: false, isForeignKey: true, referencedTable: 'Shippers' },
-    { name: 'Freight', dataType: 'decimal(10,2)', nullable: true, isPrimaryKey: false, isForeignKey: false },
-    { name: 'ShipName', dataType: 'varchar(100)', nullable: true, isPrimaryKey: false, isForeignKey: false },
-    { name: 'ShipAddress', dataType: 'varchar(255)', nullable: true, isPrimaryKey: false, isForeignKey: false },
-    { name: 'ShipCity', dataType: 'varchar(50)', nullable: true, isPrimaryKey: false, isForeignKey: false },
-    { name: 'ShipRegion', dataType: 'varchar(50)', nullable: true, isPrimaryKey: false, isForeignKey: false },
-    { name: 'ShipPostalCode', dataType: 'varchar(20)', nullable: true, isPrimaryKey: false, isForeignKey: false },
-    { name: 'ShipCountry', dataType: 'varchar(50)', nullable: true, isPrimaryKey: false, isForeignKey: false },
-    { name: 'Status', dataType: 'varchar(20)', nullable: false, isPrimaryKey: false, isForeignKey: false },
-  ],
-  'Products': [
-    { name: 'ProductID', dataType: 'int', nullable: false, isPrimaryKey: true, isForeignKey: false },
-    { name: 'ProductName', dataType: 'varchar(100)', nullable: false, isPrimaryKey: false, isForeignKey: false },
-    { name: 'SupplierID', dataType: 'int', nullable: true, isPrimaryKey: false, isForeignKey: true, referencedTable: 'Suppliers' },
-    { name: 'CategoryID', dataType: 'int', nullable: true, isPrimaryKey: false, isForeignKey: true, referencedTable: 'Categories' },
-    { name: 'QuantityPerUnit', dataType: 'varchar(50)', nullable: true, isPrimaryKey: false, isForeignKey: false },
-    { name: 'UnitPrice', dataType: 'decimal(10,2)', nullable: true, isPrimaryKey: false, isForeignKey: false },
-    { name: 'UnitsInStock', dataType: 'int', nullable: true, isPrimaryKey: false, isForeignKey: false },
-    { name: 'UnitsOnOrder', dataType: 'int', nullable: true, isPrimaryKey: false, isForeignKey: false },
-    { name: 'ReorderLevel', dataType: 'int', nullable: true, isPrimaryKey: false, isForeignKey: false },
-    { name: 'Discontinued', dataType: 'bit', nullable: false, isPrimaryKey: false, isForeignKey: false },
-  ]
-};
-
 const Dashboard: React.FC<DashboardProps> = ({ connectionDetails, onDisconnect }) => {
   const [tableStructureOpen, setTableStructureOpen] = useState(false);
   const [formGeneratorOpen, setFormGeneratorOpen] = useState(false);
   const [selectedTable, setSelectedTable] = useState('');
   const [savedForms, setSavedForms] = useState<FormConfig[]>([]);
+  const [tables, setTables] = useState<Array<{ name: string; size: number; recordCount: number }>>([]);
+  const [tableColumns, setTableColumns] = useState<Record<string, any[]>>({});
+  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   
-  const handleViewStructure = (tableName: string) => {
+  // Fetch tables when component mounts
+  useEffect(() => {
+    const fetchTables = async () => {
+      try {
+        setIsLoading(true);
+        const tablesData = await getTables({
+          server: connectionDetails.server,
+          database: connectionDetails.database,
+          authentication: connectionDetails.authentication,
+          username: connectionDetails.username,
+          password: connectionDetails.password
+        });
+        setTables(tablesData);
+      } catch (error) {
+        console.error("Error fetching tables:", error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch database tables",
+          variant: "destructive"
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchTables();
+  }, [connectionDetails]);
+  
+  const handleViewStructure = async (tableName: string) => {
     setSelectedTable(tableName);
+    
+    if (!tableColumns[tableName]) {
+      try {
+        const columns = await getTableStructure({
+          server: connectionDetails.server,
+          database: connectionDetails.database,
+          authentication: connectionDetails.authentication,
+          username: connectionDetails.username,
+          password: connectionDetails.password
+        }, tableName);
+        
+        setTableColumns(prev => ({
+          ...prev,
+          [tableName]: columns
+        }));
+      } catch (error) {
+        console.error(`Error fetching columns for ${tableName}:`, error);
+        toast({
+          title: "Error",
+          description: `Failed to fetch columns for ${tableName}`,
+          variant: "destructive"
+        });
+      }
+    }
+    
     setTableStructureOpen(true);
   };
   
-  const handleGenerateForm = (tableName: string) => {
+  const handleGenerateForm = async (tableName: string) => {
     setSelectedTable(tableName);
+    
+    if (!tableColumns[tableName]) {
+      try {
+        const columns = await getTableStructure({
+          server: connectionDetails.server,
+          database: connectionDetails.database,
+          authentication: connectionDetails.authentication,
+          username: connectionDetails.username,
+          password: connectionDetails.password
+        }, tableName);
+        
+        setTableColumns(prev => ({
+          ...prev,
+          [tableName]: columns
+        }));
+      } catch (error) {
+        console.error(`Error fetching columns for ${tableName}:`, error);
+        toast({
+          title: "Error",
+          description: `Failed to fetch columns for ${tableName}`,
+          variant: "destructive"
+        });
+      }
+    }
+    
     setFormGeneratorOpen(true);
   };
   
@@ -121,14 +156,14 @@ const Dashboard: React.FC<DashboardProps> = ({ connectionDetails, onDisconnect }
           isOpen={tableStructureOpen}
           onClose={() => setTableStructureOpen(false)}
           tableName={selectedTable}
-          columns={MOCK_COLUMNS[selectedTable as keyof typeof MOCK_COLUMNS] || []}
+          columns={tableColumns[selectedTable] || []}
         />
         
         <DynamicFormGenerator 
           isOpen={formGeneratorOpen}
           onClose={() => setFormGeneratorOpen(false)}
           tableName={selectedTable}
-          tableColumns={MOCK_COLUMNS[selectedTable as keyof typeof MOCK_COLUMNS] || []}
+          tableColumns={tableColumns[selectedTable] || []}
           onSaveForm={handleSaveForm}
         />
       </main>
@@ -137,3 +172,4 @@ const Dashboard: React.FC<DashboardProps> = ({ connectionDetails, onDisconnect }
 };
 
 export default Dashboard;
+
